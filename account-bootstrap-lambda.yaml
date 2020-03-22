@@ -1,0 +1,169 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  Template to configure the accountBootstrap Lambda function and its resources. Deploy in the AWS Organizations' master account.
+Parameters:
+  AssumedRoleName:
+    Type: String
+    Default: AWSControlTowerExecution
+    Description: The role name the Lambda function assumes in the member accounts.
+  CodeBucketName:
+    Type: String
+    Description: S3 bucket where accountBootstrap.py is stored. The region is appended in the template.
+  CodePath:
+    Type: String
+    Description: The object path to the zipped accountBootstrap.py
+  EmailBase:
+    Type: String
+    Description: The base email address used. 
+  EmailDomain:
+    Type: String
+    Description: Email domain.
+  EnabledRegions:
+    Type: String
+    Default: "us-west-2,us-east-1"
+    Description: The AWS regions you want to deploy resoures in. If left empty all regions for the service are used.
+  StackSetNames:
+    Type: String
+    Description: StackSet names to deploy. This value can be left empty.
+Resources:
+  AbRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: account-bootstrap
+      Path: /
+      AssumeRolePolicyDocument: 
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: account-bootstrap
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "sts:AssumeRole"
+                Resource:
+                  - !Sub "arn:aws:iam::*:role/${AssumedRoleName}"
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:Describe*"
+                  - "logs:Put*"
+                  - "logs:Get*"
+                  - "logs:List*"
+                Resource:
+                  - "arn:aws:logs:*:*:*"
+              - Effect: Allow
+                Action:
+                  - "cloudformation:CreateStackInstances"
+                Resource:
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - "guardduty:CreateDetector"
+                  - "guardduty:ListDetectors"
+                  - "guardduty:ListMembers"
+                  - "guardduty:InviteMembers"
+                  - "guardduty:CreateMembers"
+                  - "guardduty:DeleteMembers"
+                  - "guardduty:DisassociateMembers"
+                  - "guardduty:StartMonitoringMembers"
+                  - "guardduty:ListInvitations"
+                  - "guardduty:AcceptInvitation"
+                Resource:
+                  - "*"
+  AbKey:
+    Type: AWS::KMS::Key
+    Properties: 
+      Description: Account bootstrap Lambda key
+      EnableKeyRotation: true
+      KeyPolicy: 
+        Version: 2012-10-17
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: kms:*
+            Resource: '*'
+          - Sid: Allow use of key
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt AbRole.Arn
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+            Resource: "*"
+          - Sid: Allow attachment of persistent resources
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt AbRole.Arn
+            Action:
+              - "kms:CreateGrant"
+              - "kms:ListGrants"
+              - "kms:RevokeGrant"
+            Resource: "*"
+            Condition:
+              Bool:
+                kms:GrantIsForAWSResource: true
+  AbKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/account-bootstrap
+      TargetKeyId:
+        Ref: AbKey
+  AbCwEvent:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Account Bootstrap event"
+      EventPattern:
+        detail-type: 
+          - "AWS Service Event via CloudTrail"
+        source:
+          - "aws.controltower"
+        detail:
+          eventName:
+            - "CreateManagedAccount"
+      Name: account-bootstrap-trigger
+      State: "ENABLED"
+      Targets: 
+        - Arn: !GetAtt AbLambda.Arn
+          Id: "accountBootstrap"
+  PermissionForEventsToInvokeLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: !Ref AbLambda
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt AbCwEvent.Arn
+  AbLambda:
+    Type: AWS::Lambda::Function
+    Properties: 
+      Code: 
+        S3Bucket: !Ref CodeBucketName
+        S3Key: !Ref CodePath
+      Description: Account Bootstrap function
+      Environment: 
+        Variables:
+          assumeRoleName: !Ref AssumedRoleName
+          emailBase: !Ref EmailBase
+          emailDomain: !Ref EmailDomain
+          enabledRegions: !Ref EnabledRegions
+          stackSetNames: !Ref StackSetNames
+      FunctionName: account-bootstrap
+      Handler: "accountBootstrap.lambda_handler"
+      KmsKeyArn: !GetAtt AbKey.Arn
+      MemorySize: 256
+      Timeout: 900
+      Role: !GetAtt AbRole.Arn
+      Runtime: python3.8
