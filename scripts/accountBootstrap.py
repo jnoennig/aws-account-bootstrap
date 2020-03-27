@@ -2,7 +2,7 @@
 A Lambda function that is triggered by the Control Tower CloudWatch Event 'CreateManagedAccount'.
 It automates configuration items that are not included in Control Tower.
 
-The Amazon copyright covers the original GuardDuty functions taken from:
+The Amazon copyright covers the GuardDuty functions taken from:
 https://github.com/aws-samples/amazon-guardduty-multiaccount-scripts
 
 Copyright 2018 Amazon.com, Inc. or its affiliates.
@@ -15,11 +15,20 @@ or in the "license" file accompanying this file.
 This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
+
 This script orchestrates the enablement and centralization of GuardDuty across an enterprise of AWS accounts.
 It takes in a list of AWS Account Numbers, iterates through each account and region to enable GuardDuty.
 It creates each account as a Member in the GuardDuty Master account.
 It invites and accepts the invite for each Member account.
 
+Copyright 2020 Jason Noennig
+All Rights Reserved.
+Licensed under the Apache License, Version 2.0 (the "License").
+You may not use this file except in compliance with the License.
+A copy of the License is located at "license" file accompanying this file.
+This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
 
 MODIFIED by: Jason Noennig
 
@@ -48,6 +57,8 @@ def assume_role(aws_account_number, role_name, region='us-west-2'):
     :param role_name: Role to assume in target account
     :param aws_region: AWS Region for the Client call, not required for IAM calls
     :return: GuardDuty client in the specified AWS Account and Region
+
+    Modified by Jason Noennig
     """
 
     # Beginning the assume role process for account
@@ -86,6 +97,8 @@ def get_enabled_regions(enabled_regions, aws_service):
     :param enabled_regions: User specified regions
     :param aws_service: AWS service you want to check
     :return: list of regions
+
+    Modified by Jason Noennig
     """
     session = boto3.session.Session()
 
