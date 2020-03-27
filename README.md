@@ -61,3 +61,9 @@ The above email variables help me concatenate the account email address.
 | KMS Customer Managed CMK | account-bootstrap         |                                           |
 | CloudWatch Event Rule    | account-bootstrap-trigger |                                           |
 | Lambda Function          | account-bootstrap         | Python 3.8                                |
+
+## Copyright
+
+The Amazon copyright covers the GuardDuty functions taken from:
+https://github.com/aws-samples/amazon-guardduty-multiaccount-scripts
+
