@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Template to configure the accountBootstrap Lambda function and its resources. Deploy in the AWS Organizations' master account.
+  Template to configure the accountBootstrap Lambda function and its resources. Deploy in the AWS Organizations' root account.
 Parameters:
   AssumedRoleName:
     Type: String
