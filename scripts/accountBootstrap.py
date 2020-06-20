@@ -245,21 +245,6 @@ def logging_bucket(session, region, member_account_name, member_account_id):
         response_dict.update({'versionBucket': ver_response})
     except ClientError as e:
         LOGGER.error('Failed enabling versioning on S3 logging bucket for account {0}: {1}'.format(member_account_id, e))
-    # Bucket logging
-    try:
-        LOGGER.info('Configuring bucket logging on bucket {}'.format(bucket_name))
-        logging_response = s3.put_bucket_logging(
-            Bucket=bucket_name,
-            BucketLoggingStatus={
-                'LoggingEnabled':{
-                    'TargetBucket': bucket_name,
-                    'TargetPrefix': 'mylogs/'
-                }
-            }
-        )
-        response_dict.update({'loggingBucket': logging_response})
-    except ClientError as e:
-        LOGGER.error('Failed enabling bucket logging on S3 logging bucket for account {0}: {1}'.format(member_account_id, e))
     # Deny public access
     try:
         LOGGER.info('Denying public access on bucket {}'.format(bucket_name))

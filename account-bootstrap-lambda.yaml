@@ -8,7 +8,7 @@ Parameters:
     Description: The role name the Lambda function assumes in the member accounts.
   CodeBucketName:
     Type: String
-    Description: S3 bucket where accountBootstrap.py is stored. The region is appended in the template.
+    Description: S3 bucket where accountBootstrap.py is stored.
   CodePath:
     Type: String
     Description: The object path to the zipped accountBootstrap.py
