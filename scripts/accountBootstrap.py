@@ -339,7 +339,7 @@ def get_master_members(aws_region, detector_id):
 
     return member_dict
 
-def get_member_emails(aws_region, detector_id):
+def get_members(aws_region, detector_id):
     '''
     Returns a dictionary of account IDs and emails
     :param aws_region (us-west-2): defaults to us-west-2 as that is our default region
@@ -358,7 +358,12 @@ def get_member_emails(aws_region, detector_id):
     for page in page_iterator:
         if page['Members']:
             for member in page['Members']:
-                member_dict.update({member['AccountId']: member['Email']})
+                # Accounts that were added at the Organization level do not have associated emails
+                try:
+                    member_email = member['Email']
+                except:
+                    member_email = None
+                member_dict.update({member['AccountId']: member_email})
     return member_dict
 
 def list_detectors(client, aws_region):
@@ -680,6 +685,7 @@ def lambda_handler(event, context):
     assume_role_name = os.environ['assumeRoleName']
     enabled_regions = os.environ['enabledRegions']
     stackset_names = os.environ['stackSetNames']
+    stackset_names_or = os.environ['stackSetNamesOneRegion']
     session = assume_role(member_account_id, assume_role_name)
     # Create resources
     # Alias
@@ -701,7 +707,15 @@ def lambda_handler(event, context):
             cf_stacksets(stackset_name, member_account_id, cf_regions)
         else:
             LOGGER.info('CloudFormation StackSet list empty')
+    stackset_names_or = [str(item).strip() for item in stackset_names_or.split(',')]
+    for stackset_name in stackset_names_or:
+        if stackset_name:
+            default_region = [os.environ['defaultRegion']]
+            cf_stacksets(stackset_name, member_account_id, default_region)
+        else:
+            LOGGER.info('CloudFormation StackSet one region empty')
     # GuardDuty
+    # Collecting data to enable GD in member accounts
     # Change default_gd_region to your main region
     default_gd_region = 'us-west-2'
     aws_account_dict = OrderedDict()
@@ -709,7 +723,7 @@ def lambda_handler(event, context):
     gd_client = boto3.client('guardduty', region_name=default_gd_region)
     detector_dict = list_detectors(gd_client, default_gd_region)
     detector_id = detector_dict[default_gd_region]
-    members = get_member_emails(default_gd_region, detector_id)
+    members = get_members(default_gd_region, detector_id)
     member_email = email_base + '+' + member_account_name + '@' + email_domain
     aws_account_dict.update({member_account_id: member_email})
     if len(members) > 1000:
@@ -717,9 +731,10 @@ def lambda_handler(event, context):
     master_account_checked = master_account_check(master_account, gd_regions)
     master_detector_id_dict = master_account_checked[1]
     failed_master_regions = master_account_checked[0]
+    # Removes regions the detector failed to enable in the master account
     for failed_region in failed_master_regions:
         gd_regions.remove(failed_region)
-    # Processing accounts to be linked
+    # Processing accounts to be linked/invited
     failed_accounts = invite_members(
         master_account,
         aws_account_dict,
