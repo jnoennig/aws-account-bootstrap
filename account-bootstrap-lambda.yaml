@@ -25,6 +25,9 @@ Parameters:
   StackSetNames:
     Type: String
     Description: StackSet names to deploy. This value can be left empty.
+  StackSetNamesOneRegion:
+    Type: String
+    Description: StackSet names to deploy in only one region. Check the Lambda function variable defaultRegion to see which region is being used.
 Resources:
   AbRole:
     Type: AWS::IAM::Role
@@ -160,6 +163,8 @@ Resources:
           emailDomain: !Ref EmailDomain
           enabledRegions: !Ref EnabledRegions
           stackSetNames: !Ref StackSetNames
+          stackSetNamesOneRegion : !Ref StackSetNamesOneRegion
+          defaultRegion: !Ref "AWS::Region"
       FunctionName: account-bootstrap
       Handler: "accountBootstrap.lambda_handler"
       KmsKeyArn: !GetAtt AbKey.Arn
