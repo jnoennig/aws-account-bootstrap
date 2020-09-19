@@ -27,28 +27,9 @@ These variables control the regions which resources are configured in, the IAM r
 | AssumedRoleName | `role_name`                   | `AWSControlTowerExecution`                     | The role assumed by the script in the new member account. |
 | CodeBucketName  | `s3_bucket_name`              | `my-automation-bucket-us-west-2`               | The S3 bucket name that has the Python code. |
 | CodePath        | `folder/file`                 | `account-bootstrap/account-bootstrap_v1_0.zip` | The path to Python code zip file. |
-| EmailBase       | `local-part`                  | `JohnDoe`                                      | This is the local-part of the email address. See the **Email Usage** section
-| EmailDomain     | `domain.tld`                  | `gmail.com`                                    | Domain of your account's email address. |
 | EnabledRegions  | `region1,region2`             | `us-west-2,us-east-1`                          | Regions you want resources created in. Used by GuardDuty and CloudFormation.
 | StackSetNames   | `StackSetName1,StackSetName2` | `myconfig-rules,splunk-trumpet`                | StackSet Names |
 | StackSetNamesOneRegion | `StackSetName1,StackSetName2` | `cis-cloudwatch-alarms` | StackSetNames that only need to be deployed in one region | 
-
-### Email Usage
-
-This section will go over how I generate the account email. The Control Tower CloudWatch Events do not pass the account email, so I need to generate it programatically.
-
-For the member accounts of the AWS Organization I am using one (1) main email address and utilizing `+` in the email address. This is so I don't need to create a new email address for each member account. It also has the benefit of predicting the account email address and allowing me to use it to enable GuardDuty in the account.
-
-The above email variables help me concatenate the account email address.
-
-### Concatenation
-
-`EmailBase`+`AccountName`.`EmailDomain`
-
-#### Email Account Examples
-
-* `JohnDoe+my-account-01.gmail.com`
-* `JohnDoe+my-account-02.gmail.com`
 
 ## CloudFormation Template
 

@@ -12,12 +12,6 @@ Parameters:
   CodePath:
     Type: String
     Description: The object path to the zipped accountBootstrap.py
-  EmailBase:
-    Type: String
-    Description: The base email address used. 
-  EmailDomain:
-    Type: String
-    Description: Email domain.
   EnabledRegions:
     Type: String
     Default: "us-west-2,us-east-1"
@@ -66,6 +60,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - "cloudformation:CreateStackInstances"
+                  - "organizations:DescribeAccount"
                 Resource:
                   - "*"
               - Effect: Allow
@@ -159,8 +154,6 @@ Resources:
       Environment: 
         Variables:
           assumeRoleName: !Ref AssumedRoleName
-          emailBase: !Ref EmailBase
-          emailDomain: !Ref EmailDomain
           enabledRegions: !Ref EnabledRegions
           stackSetNames: !Ref StackSetNames
           stackSetNamesOneRegion : !Ref StackSetNamesOneRegion

@@ -111,6 +111,20 @@ def get_enabled_regions(enabled_regions, aws_service):
         LOGGER.info("Enabling in all available regions {}".format(region_results))
     return region_results
 
+def get_member_email(member_account_id):
+    '''
+    Gets the member account email from the Organizations service
+    :param member_account_id: AWS member account ID
+    :return member_email: Member email address
+    '''
+    try:
+        orgs = boto3.client('organizations')
+        response = orgs.describe_account(AccountId=member_account_id)
+        member_email = response['Account']['Email']
+        return member_email
+    except ClientError as e:
+        LOGGER.error('Failed to get member account email address for account {0}: {1}'.format(member_account_id, e))
+
 def create_alias(session, member_account_name, member_account_id):
     '''
     Creates an alias for an account
@@ -680,8 +694,6 @@ def lambda_handler(event, context):
     member_account_id = event['detail']['serviceEventDetails']['createManagedAccountStatus']['account']['accountId']
     member_account_name = event['detail']['serviceEventDetails']['createManagedAccountStatus']['account']['accountName']
     master_account = boto3.client('sts').get_caller_identity().get('Account')
-    email_base = os.environ['emailBase']
-    email_domain = os.environ['emailDomain']
     assume_role_name = os.environ['assumeRoleName']
     enabled_regions = os.environ['enabledRegions']
     stackset_names = os.environ['stackSetNames']
@@ -724,7 +736,7 @@ def lambda_handler(event, context):
     detector_dict = list_detectors(gd_client, default_gd_region)
     detector_id = detector_dict[default_gd_region]
     members = get_members(default_gd_region, detector_id)
-    member_email = email_base + '+' + member_account_name + '@' + email_domain
+    member_email = get_member_email(member_account_id)
     aws_account_dict.update({member_account_id: member_email})
     if len(members) > 1000:
         raise Exception("Only 1000 accounts can be linked to a single master account")
