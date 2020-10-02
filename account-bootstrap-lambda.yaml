@@ -16,6 +16,10 @@ Parameters:
     Type: String
     Default: "us-west-2,us-east-1"
     Description: The AWS regions you want to deploy resoures in. If left empty all regions for the service are used.
+  Name:
+    Type: String
+    Default: account-bootstrap
+    Description: Name of the Lambda function, Log Group, IAM role, IAM Policy, and KMS alias
   StackSetNames:
     Type: String
     Description: StackSet names to deploy. This value can be left empty.
@@ -26,7 +30,7 @@ Resources:
   AbRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: account-bootstrap
+      RoleName: !Ref Name
       Path: /
       AssumeRolePolicyDocument: 
         Version: 2012-10-17
@@ -38,7 +42,7 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Policies:
-        - PolicyName: account-bootstrap
+        - PolicyName: !Ref Name
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -117,7 +121,10 @@ Resources:
   AbKeyAlias:
     Type: AWS::KMS::Alias
     Properties:
-      AliasName: alias/account-bootstrap
+      AliasName: !Join
+        - ''
+        - - 'alias/'
+          - !Ref Name
       TargetKeyId:
         Ref: AbKey
   AbCwEvent:
@@ -158,10 +165,18 @@ Resources:
           stackSetNames: !Ref StackSetNames
           stackSetNamesOneRegion : !Ref StackSetNamesOneRegion
           defaultRegion: !Ref "AWS::Region"
-      FunctionName: account-bootstrap
+      FunctionName: !Ref Name
       Handler: "accountBootstrap.lambda_handler"
       KmsKeyArn: !GetAtt AbKey.Arn
       MemorySize: 256
       Timeout: 900
       Role: !GetAtt AbRole.Arn
       Runtime: python3.8
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Join
+        - ''
+        - - '/aws/lambda/'
+          - !Ref Name
+      RetentionInDays: 365
