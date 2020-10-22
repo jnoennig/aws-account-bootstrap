@@ -15,7 +15,7 @@ AWS Documentation: [Control Tower lifecycle events](https://docs.aws.amazon.com/
 * Enable S3 "block public access" at account level
 * Create S3 logging bucket
 * Enables GuardDuty on the new account and sets up master member relationship
-  * If GuardDuty auto-enable is on for the Organization the GuardDuty pie
+  * If GuardDuty auto-enable is on for the Organization it will confirm the relationship.
 * Add Stacks to StackSets
 
 ## Variables
